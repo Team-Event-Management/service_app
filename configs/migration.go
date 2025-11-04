@@ -1,7 +1,11 @@
 package configs
 
-import "gorm.io/gorm"
+import (
+	"event_management/internal/models"
+
+	"gorm.io/gorm"
+)
 
 func RunMigrations(db *gorm.DB) error {
-	return nil
+	return db.AutoMigrate(&models.Role{})
 }
