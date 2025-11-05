@@ -2,6 +2,7 @@ package main
 
 import (
 	"event_management/configs"
+	"event_management/routes"
 	"log"
 	"os"
 
@@ -21,6 +22,12 @@ func main() {
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.PATCH},
 	}))
+
+	routes.Routes(e, db)
+
+	for _, r := range e.Routes() {
+		log.Printf("ROUTE %s %s", r.Method, r.Path)
+	}
 
 	port := os.Getenv("PORT")
 	if port == "" {

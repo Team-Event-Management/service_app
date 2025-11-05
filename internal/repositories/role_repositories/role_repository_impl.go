@@ -8,19 +8,19 @@ import (
 	"gorm.io/gorm"
 )
 
-type RoleRepository struct {
+type RoleRepositoryImpl struct {
 	DB *gorm.DB
 }
 
-func NewRoleRepository(db *gorm.DB) *RoleRepository {
-	return &RoleRepository{DB: db}
+func NewRoleRepositoryImpl(db *gorm.DB) *RoleRepositoryImpl {
+	return &RoleRepositoryImpl{DB: db}
 }
 
-func (r *RoleRepository) Create(ctx context.Context, data *models.Role) error {
+func (r *RoleRepositoryImpl) Create(ctx context.Context, data *models.Role) error {
 	return r.DB.WithContext(ctx).Create(data).Error
 }
 
-func (r *RoleRepository) FindByName(ctx context.Context, name string) (*models.Role, error) {
+func (r *RoleRepositoryImpl) FindByName(ctx context.Context, name string) (*models.Role, error) {
 	var role models.Role
 
 	if err := r.DB.WithContext(ctx).Where("name = ?", name).First(&role).Error; err != nil {
@@ -30,7 +30,7 @@ func (r *RoleRepository) FindByName(ctx context.Context, name string) (*models.R
 	return &role, nil
 }
 
-func (r *RoleRepository) FindAll(ctx context.Context, limit, offset int, search string) ([]*models.Role, int, error) {
+func (r *RoleRepositoryImpl) FindAll(ctx context.Context, limit, offset int, search string) ([]*models.Role, int, error) {
 	var (
 		roles  []*models.Role
 		count int64
@@ -53,7 +53,7 @@ func (r *RoleRepository) FindAll(ctx context.Context, limit, offset int, search 
 	return roles, int(count), nil
 }
 
-func (r *RoleRepository) FindById(ctx context.Context, roleId uuid.UUID) (*models.Role, error) {
+func (r *RoleRepositoryImpl) FindById(ctx context.Context, roleId uuid.UUID) (*models.Role, error) {
 	var role models.Role
 
 	if err := r.DB.WithContext(ctx).Where("id = ?", roleId).First(&role).Error; err != nil {
@@ -63,7 +63,7 @@ func (r *RoleRepository) FindById(ctx context.Context, roleId uuid.UUID) (*model
 	return &role, nil
 }
 
-func (r *RoleRepository) Update(ctx context.Context, roleId uuid.UUID, data *models.Role) error {
+func (r *RoleRepositoryImpl) Update(ctx context.Context, roleId uuid.UUID, data *models.Role) error {
 	var existing models.Role
 	
 	if err := r.DB.WithContext(ctx).Where("id = ?", roleId).First(&existing).Error; err != nil {
@@ -74,6 +74,6 @@ func (r *RoleRepository) Update(ctx context.Context, roleId uuid.UUID, data *mod
 	return r.DB.WithContext(ctx).Save(&existing).Error
 }
 
-func (r *RoleRepository) Delete(ctx context.Context, roleId uuid.UUID) error {
+func (r *RoleRepositoryImpl) Delete(ctx context.Context, roleId uuid.UUID) error {
 	return r.DB.WithContext(ctx).Delete(&models.Role{}, "id = ?", roleId).Error
 }
