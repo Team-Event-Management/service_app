@@ -99,9 +99,7 @@ func (a *AdminHandler) UpdateProfileAdmin(c echo.Context) error {
 	adminID := claims["user_id"].(string)
 
 	var req adminrequest.UpdateProfileRequest
-	if err := c.Bind(&req); err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid request body", err.Error())
-	}
+	req.Name = c.FormValue("name")
 
 	err := a.adminService.UpdateProfile(c.Request().Context(), uuid.MustParse(adminID), req)
 	if err != nil {
