@@ -11,5 +11,8 @@ func RunMigrations(db *gorm.DB) error {
 		&models.Role{},
 		&models.User{},
 		&models.Instance{},
+		&models.Image{},
+		&models.Event{},
+		&models.ImageEvent{},
 	)
 }

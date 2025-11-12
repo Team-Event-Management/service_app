@@ -9,15 +9,15 @@ import (
 	"github.com/google/uuid"
 )
 
-type InstanceService struct {
+type InstanceServiceImpl struct {
 	instanceRepo instancerepository.IInstanceRepository
 }
 
 func NewInstanceServiceImpl(instanceRepo instancerepository.IInstanceRepository) IInstanceService {
-	return &InstanceService{instanceRepo: instanceRepo}
+	return &InstanceServiceImpl{instanceRepo: instanceRepo}
 }
 
-func (s *InstanceService) CreateInstance(ctx context.Context, req instancerequest.CreateInstanceRequest) error {
+func (s *InstanceServiceImpl) CreateInstance(ctx context.Context, req instancerequest.CreateInstanceRequest) error {
 	instance := &models.Instance{
 		Name		: req.Name,
 		Lat 		: req.Lat,
@@ -27,16 +27,16 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req instancereques
 	return s.instanceRepo.Create(ctx, instance)
 }
 
-func (s *InstanceService) GetAllInstance(ctx context.Context, page, limit int, search string) ([]*models.Instance, int, error) {
+func (s *InstanceServiceImpl) GetAllInstance(ctx context.Context, page, limit int, search string) ([]*models.Instance, int, error) {
 	offset := (page - 1) * limit
 	return s.instanceRepo.FindAll(ctx, limit, offset, search)
 }
 
-func (s *InstanceService) GetByIdInstance(ctx context.Context, instanceId uuid.UUID) (*models.Instance, error) {
+func (s *InstanceServiceImpl) GetByIdInstance(ctx context.Context, instanceId uuid.UUID) (*models.Instance, error) {
 	return s.instanceRepo.FindById(ctx, instanceId)
 }
 
-func (s *InstanceService) UpdateInstance(ctx context.Context, instanceId uuid.UUID, req instancerequest.UpdateInstanceRequest) error {
+func (s *InstanceServiceImpl) UpdateInstance(ctx context.Context, instanceId uuid.UUID, req instancerequest.UpdateInstanceRequest) error {
 	instance, err := s.instanceRepo.FindById(ctx, instanceId)
 	if err != nil {
 		return err
@@ -54,6 +54,6 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, instanceId uuid.UU
 	return s.instanceRepo.Update(ctx, instanceId, instance)
 }
 
-func (s *InstanceService) DeleteInstance(ctx context.Context, instanceId uuid.UUID) error {
+func (s *InstanceServiceImpl) DeleteInstance(ctx context.Context, instanceId uuid.UUID) error {
 	return s.instanceRepo.Delete(ctx, instanceId)
 }
