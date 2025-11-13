@@ -13,19 +13,19 @@ type ImageResponse struct {
 }
 
 type EventResponse struct {
-	ID 			uuid.UUID `json:"id"`
-	NameEvent 	string    		`json:"name_event"`
-	Description string    		`json:"description"`
-	Status      int      		`json:"status"`
-	Location    string    		`json:"location"`
-	Images 		[]ImageResponse `json:"images"`
-	CreatedAt 	string    		`json:"created_at"`
-	UpdatedAt 	string    		`json:"updated_at"`
+	ID           uuid.UUID       `json:"id"`
+	NameEvent    string          `json:"name_event"`
+	Description  string          `json:"description"`
+	Status       int             `json:"status"`
+	Location     string          `json:"location"`
+	EventImages  []ImageResponse `json:"event_images"`
+	CreatedAt    string          `json:"created_at"`
+	UpdatedAt    string          `json:"updated_at"`
 }
 
 func ToEventResponse(event models.Event) EventResponse {
 	images := make([]ImageResponse, 0)
-	for _, img := range event.Images {
+	for _, img := range event.EventImages {
 		images = append(images, ImageResponse{
 			ID:        img.ID,
 			ImagePath: img.ImagePath,
@@ -33,13 +33,13 @@ func ToEventResponse(event models.Event) EventResponse {
 	}
 
 	return EventResponse{
-		ID:          event.ID,
-		NameEvent:   event.NameEvent,
-		Description: event.Description,
-		Status:      event.Status,
-		Location:    event.Location,
-		Images:      images,
-		CreatedAt: 	 utils.FormatDate(event.CreatedAt),
-		UpdatedAt: 	 utils.FormatDate(event.UpdatedAt),
+		ID:           event.ID,
+		NameEvent:    event.NameEvent,
+		Description:  event.Description,
+		Status:       event.Status,
+		Location:     event.Location,
+		EventImages:  images,
+		CreatedAt:    utils.FormatDate(event.CreatedAt),
+		UpdatedAt:    utils.FormatDate(event.UpdatedAt),
 	}
 }

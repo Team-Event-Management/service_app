@@ -12,7 +12,7 @@ type Event struct {
 	Description string    `gorm:"type:text" json:"description"`
 	Status      int       `gorm:"type:int;" json:"status"`
 	Location  	string    `gorm:"type:text" json:"location"`
-	Images 		[]Image   `gorm:"many2many:image_events;" json:"images"`
+	EventImages  []Image   `gorm:"many2many:image_events;joinForeignKey:ID;joinReferences:ID;joinForeignKey:id_event;joinReferences:id_image" json:"event_images"`
 	CreatedAt 	time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt 	time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }

@@ -37,6 +37,7 @@ func (r *EventRepositoryImpl) FindAll(ctx context.Context, limit, offset int, se
 	)
 
 	query := r.DB.WithContext(ctx).Model(&models.Event{})
+	query.Preload("EventImages")
 
 	if search != "" {
 		query = query.Where("name_event ILIKE ?", "%"+search+"%")
@@ -46,7 +47,7 @@ func (r *EventRepositoryImpl) FindAll(ctx context.Context, limit, offset int, se
 		return nil, 0, err
 	}
 
-	if err := query.Limit(limit).Offset(offset).Order("created_at DESC").Find(&events).Error; err != nil {
+	if err := query.Preload("EventImages").Limit(limit).Offset(offset).Order("created_at DESC").Find(&events).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -56,7 +57,7 @@ func (r *EventRepositoryImpl) FindAll(ctx context.Context, limit, offset int, se
 func (r *EventRepositoryImpl) FindById(ctx context.Context, eventId uuid.UUID) (*models.Event, error) {
 	var event models.Event
 
-	if err := r.DB.WithContext(ctx).Where("id = ?", eventId).First(&event).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Preload("EventImages").Where("id = ?", eventId).First(&event).Error; err != nil {
 		return nil, err
 	}
 
