@@ -76,7 +76,7 @@ func (c *cloudinaryServiceImpl) DestroyImage(ctx context.Context, publicID strin
 }
 
 func (c *cloudinaryServiceImpl) UploadImageBytes(ctx context.Context, file io.Reader, folder, filename string) (*UploadResult, error) {
-	publicID := fmt.Sprintf("%s/%s", folder, filename)
+	publicID := filename
 	resp, err := c.cld.Upload.Upload(ctx, file, uploader.UploadParams{
 		PublicID:     publicID,
 		Folder:       folder,
