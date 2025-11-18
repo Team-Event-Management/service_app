@@ -31,11 +31,20 @@ func NewEventHandler(
 
 func (r *EventHandler) CreateEvent(c echo.Context) error {
 	var req eventrequest.CreateEventRequest
-	if err := c.Bind(&req); err != nil {
-		return response.Error(c, http.StatusBadRequest, "bad request", err.Error())
+
+	// ambil data text dari form
+	req.NameEvent = c.FormValue("name_event")
+	req.Description = c.FormValue("description")
+	req.Status = utils.ParseInt(c.FormValue("status"), 0)
+	req.Location = c.FormValue("location")
+
+	// ambil multiple file dari field event_images
+	form, err := c.MultipartForm()
+	if err == nil && form.File != nil {
+		req.EventImages = form.File["event_images"]
 	}
 
-	err := r.eventService.CreateEvent(c.Request().Context(), req)
+	err = r.eventService.CreateEvent(c.Request().Context(), req)
 	if err != nil {
 		if customErr, ok := errorresponse.AsCustomErr(err); ok {
 			return response.Error(c, customErr.Status, customErr.Msg, customErr.Err.Error())
@@ -85,7 +94,7 @@ func (r *EventHandler) GetByIdEvent(c echo.Context) error {
 
 	return response.Success(c, http.StatusOK, "Get Event Successfully", res)
 }
-	
+
 func (r *EventHandler) UpdateEvent(c echo.Context) error {
 	eventId, err := uuid.Parse(c.Param("eventId"))
 	if err != nil {
@@ -123,28 +132,6 @@ func (r *EventHandler) DeleteEvent(c echo.Context) error {
 	}
 
 	return response.Success(c, http.StatusOK, "Event Deleted Successfully", nil)
-}
-
-func (r *EventHandler) UploadEventImage(c echo.Context) error {
-	eventId, err := uuid.Parse(c.Param("eventId"))
-	if err != nil {
-		return response.Error(c, http.StatusBadRequest, "bad request", err.Error())
-	}
-
-	file, err := c.FormFile("file")
-	if err != nil {
-		return response.Error(c, http.StatusBadRequest, "bad request", err.Error())
-	}
-
-	_, err = r.imageService.UploadImage(c.Request().Context(), eventId, file)
-	if err != nil {
-		if customErr, ok := errorresponse.AsCustomErr(err); ok {
-			return response.Error(c, customErr.Status, customErr.Msg, customErr.Err.Error())
-		}
-		return response.Error(c, http.StatusInternalServerError, err.Error(), "failed to upload image")
-	}
-
-	return response.Success(c, http.StatusCreated, "Image Uploaded Successfully", nil)
 }
 
 func (r *EventHandler) ListEventImages(c echo.Context) error {

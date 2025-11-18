@@ -2,6 +2,8 @@ package main
 
 import (
 	"event_management/configs"
+	datasources "event_management/internal/dataSources"
+	"event_management/pkg/workers/producer"
 	"event_management/routes"
 	"log"
 	"os"
@@ -23,11 +25,21 @@ func main() {
 		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.PATCH},
 	}))
 
-	routes.Routes(e, db)
-
 	for _, r := range e.Routes() {
 		log.Printf("ROUTE %s %s", r.Method, r.Path)
 	}
+
+	cloudinarySvc, err := datasources.NewCloudinaryService()
+	if err != nil {
+		log.Fatalf("Failed to initialize Cloudinary service: %v", err)
+	}
+
+	configs.InitRabbitMQ()
+	defer configs.CloseConnections()
+
+	go producer.StartWorker()
+
+	routes.Routes(e, db, &cloudinarySvc)
 
 	port := os.Getenv("PORT")
 	if port == "" {

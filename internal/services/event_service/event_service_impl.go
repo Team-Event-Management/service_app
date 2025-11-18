@@ -5,9 +5,12 @@ import (
 	eventrequest "event_management/internal/dto/request/event_request"
 	"event_management/internal/models"
 	eventrepository "event_management/internal/repositories/event_repositories"
-	imageRepository "event_management/internal/repositories/image_repositories"
-	imageService "event_management/internal/services/image_service"
 	errorresponse "event_management/pkg/constant/error_response"
+	rabbitmq "event_management/pkg/constant/rabbitMq"
+	"event_management/pkg/workers/payload"
+	"fmt"
+	"io"
+	"mime/multipart"
 	"strings"
 
 	"github.com/google/uuid"
@@ -21,14 +24,20 @@ func NewEventServiceImpl(eventRepo eventrepository.IEventRepository) IEventServi
 	return &EventServiceImpl{eventRepo: eventRepo}
 }
 
-func (s *EventServiceImpl) CreateEvent(ctx context.Context, req eventrequest.CreateEventRequest) error {
-	imageRepo := imageRepository.NewImageRepositoryImpl(s.eventRepo.(*eventrepository.EventRepositoryImpl).DB)
-	imageService := imageService.NewImageServiceImpl(s.eventRepo, imageRepo, "uploads")
+func fileToBytes(fh *multipart.FileHeader) ([]byte, error) {
+	f, err := fh.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return io.ReadAll(f)
+}
 
+func (s *EventServiceImpl) CreateEvent(ctx context.Context, req eventrequest.CreateEventRequest) error {
 	if strings.TrimSpace(req.NameEvent) == "" {
 		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Name Event is required", 400)
 	}
-	
+
 	event := &models.Event{
 		ID:          uuid.New(),
 		NameEvent:   req.NameEvent,
@@ -37,24 +46,29 @@ func (s *EventServiceImpl) CreateEvent(ctx context.Context, req eventrequest.Cre
 		Location:    req.Location,
 	}
 
-	createEventErr := s.eventRepo.Create(ctx, event)
-	if createEventErr != nil {
-		return createEventErr
+	// simpan event
+	if err := s.eventRepo.Create(ctx, event); err != nil {
+		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to create event", 500)
 	}
 
-	// manggil image service buat tiap image
-	var uploadErrors []string
-	for i := 0; i < len(req.EventImages); i++ {
-		// upload image
-		_, err := imageService.UploadImage(ctx, event.ID, req.EventImages[i])
-		if err != nil {
-			uploadErrors = append(uploadErrors, err.Error())
+	// kirim tiap gambar ke queue
+	for _, imgFile := range req.EventImages {
+		binner, err := fileToBytes(imgFile)
+		if err != nil || len(binner) == 0 {
+			continue
 		}
+
+		pay := payload.ImageUploadPayload{
+			ID:        event.ID, // cukup UUID, jangan event.ID.String()
+			Type:      "many",   // ganti dari "multiple" ke "many" agar sesuai dengan consumer
+			FileBytes: binner,
+			Folder:    "management_event/event_images",
+			Filename:  fmt.Sprintf("event_%s_%s", event.ID, imgFile.Filename),
+		}
+
+		_ = rabbitmq.PublishToQueue("", rabbitmq.SendEventImageQueueName, pay)
 	}
 
-	if len(uploadErrors) > 0 {
-		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Some event_images failed to upload: "+strings.Join(uploadErrors, "; "), 207)
-	}
 	return nil
 }
 
@@ -79,7 +93,7 @@ func (s *EventServiceImpl) UpdateEvent(ctx context.Context, eventId uuid.UUID, r
 	event.Description = req.Description
 	event.Status = req.Status
 	event.Location = req.Location
-	
+
 	return s.eventRepo.Update(ctx, eventId, event)
 }
 

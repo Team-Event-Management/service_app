@@ -1,80 +1,70 @@
 package imageservice
 
 import (
+	"bytes"
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
-	"io"
-	"mime/multipart"
-	"os"
-	"path/filepath"
-	"time"
 
+	"event_management/configs"
+	datasources "event_management/internal/dataSources"
 	"event_management/internal/models"
 	eventrepo "event_management/internal/repositories/event_repositories"
 	imagerepo "event_management/internal/repositories/image_repositories"
+	rabbitmq "event_management/pkg/constant/rabbitMq"
+	"event_management/pkg/workers/payload"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type ImageServiceImpl struct {
 	eventRepo eventrepo.IEventRepository
 	imageRepo imagerepo.IImageRepository
-	storageDir string // e.g. "uploads"
+	cld       datasources.CloudinaryService
 }
 
-func NewImageServiceImpl(eventRepo eventrepo.IEventRepository, imageRepo imagerepo.IImageRepository, storageDir string) IImageService {
+func NewImageServiceImpl(eventRepo eventrepo.IEventRepository, imageRepo imagerepo.IImageRepository, cld datasources.CloudinaryService) IImageService {
 	return &ImageServiceImpl{
-		eventRepo:  eventRepo,
-		imageRepo:  imageRepo,
-		storageDir: storageDir,
+		eventRepo: eventRepo,
+		imageRepo: imageRepo,
+		cld:       cld,
 	}
 }
 
-func (s *ImageServiceImpl) UploadImage(ctx context.Context, eventID uuid.UUID, file *multipart.FileHeader) (*models.Image, error) {
-	if _, err := s.eventRepo.FindById(ctx, eventID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("event not found")
+func (s *ImageServiceImpl) ConsumeEventImageUpload() {
+	ch := configs.GetRabbitChannel()
+	q, _ := ch.QueueDeclare(rabbitmq.SendEventImageQueueName, true, false, false, false, nil)
+	msgs, _ := ch.Consume(q.Name, "", true, false, false, false, nil)
+
+	fmt.Println("📥 Listening for event image uploads...")
+
+	for msg := range msgs {
+		var pay payload.ImageUploadPayload
+		if err := json.Unmarshal(msg.Body, &pay); err != nil {
+			continue
 		}
-		return nil, err
-	}
 
-	if err := os.MkdirAll(s.storageDir, os.ModePerm); err != nil {
-		return nil, err
-	}
-	src, err := file.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer src.Close()
+		reader := bytes.NewReader(pay.FileBytes)
+		res, err := s.cld.UploadImageBytes(context.Background(), reader, pay.Folder, pay.Filename)
+		if err != nil {
+			continue
+		}
 
-	filename := fmt.Sprintf("%d_%s", time.Now().UnixNano(), file.Filename)
-	fullpath := filepath.Join(s.storageDir, filename)
+		img := &models.Image{
+			ID:        uuid.New(),
+			ImagePath: res.URL,
+		}
 
-	dst, err := os.Create(fullpath)
-	if err != nil {
-		return nil, err
-	}
-	defer dst.Close()
+		if err := s.imageRepo.Create(context.Background(), img); err != nil {
+			continue
+		}
 
-	if _, err := io.Copy(dst, src); err != nil {
-		return nil, err
-	}
+		eventID := pay.ID
 
-	img := &models.Image{
-		ID:        uuid.New(),
-		ImagePath: fullpath,
+		if err := s.imageRepo.AttachToEvent(context.Background(), eventID, img.ID); err != nil {
+			continue
+		}
 	}
-	if err := s.imageRepo.Create(ctx, img); err != nil {
-		return nil, err
-	}
-
-	if err := s.imageRepo.AttachToEvent(ctx, eventID, img.ID); err != nil {
-		return nil, err
-	}
-
-	return img, nil
 }
 
 func (s *ImageServiceImpl) ListImages(ctx context.Context, eventID uuid.UUID) ([]*models.Image, error) {

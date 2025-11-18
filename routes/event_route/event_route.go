@@ -1,6 +1,7 @@
 package eventroute
 
 import (
+	datasources "event_management/internal/dataSources"
 	eventhandler "event_management/internal/handlers/event_handler"
 	eventrepository "event_management/internal/repositories/event_repositories"
 	imagerepository "event_management/internal/repositories/image_repositories"
@@ -11,12 +12,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func EventRoutes(e *echo.Group, db *gorm.DB) {
+func EventRoutes(e *echo.Group, db *gorm.DB, cloudinarySvc *datasources.CloudinaryService) {
 	eventRepo := eventrepository.NewEventRepositoryImpl(db)
 	imageRepo := imagerepository.NewImageRepositoryImpl(db)
 
 	eventSvc := eventservice.NewEventServiceImpl(eventRepo)
-	imageSvc := imageservice.NewImageServiceImpl(eventRepo, imageRepo, "uploads")
+	imageSvc := imageservice.NewImageServiceImpl(eventRepo, imageRepo, *cloudinarySvc)
 
 	handler := eventhandler.NewEventHandler(eventSvc, imageSvc)
 
@@ -26,7 +27,6 @@ func EventRoutes(e *echo.Group, db *gorm.DB) {
 	e.PUT("/:eventId/edit", handler.UpdateEvent)
 	e.DELETE("/:eventId/delete", handler.DeleteEvent)
 
-	e.POST("/:eventId/upload-image", handler.UploadEventImage)
 	e.GET("/:eventId/images", handler.ListEventImages)
 	e.DELETE("/:eventId/images/:imageId", handler.DeleteEventImage)
 }
