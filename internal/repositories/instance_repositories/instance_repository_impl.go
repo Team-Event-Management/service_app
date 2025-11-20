@@ -74,6 +74,7 @@ func (r *InstanceRepositoryImpl) Update(ctx context.Context, instanceId uuid.UUI
 	existing.Lat = data.Lat
 	existing.Lng = data.Lng
 	existing.FullAddress = data.FullAddress
+	
 	return r.DB.WithContext(ctx).Save(&existing).Error
 }
 

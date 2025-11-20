@@ -32,7 +32,7 @@ func (r *RoleRepositoryImpl) FindByName(ctx context.Context, name string) (*mode
 
 func (r *RoleRepositoryImpl) FindAll(ctx context.Context, limit, offset int, search string) ([]*models.Role, int, error) {
 	var (
-		roles  []*models.Role
+		roles []*models.Role
 		count int64
 	)
 
@@ -65,7 +65,7 @@ func (r *RoleRepositoryImpl) FindById(ctx context.Context, roleId uuid.UUID) (*m
 
 func (r *RoleRepositoryImpl) Update(ctx context.Context, roleId uuid.UUID, data *models.Role) error {
 	var existing models.Role
-	
+
 	if err := r.DB.WithContext(ctx).Where("id = ?", roleId).First(&existing).Error; err != nil {
 		return err
 	}

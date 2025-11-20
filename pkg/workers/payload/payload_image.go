@@ -4,10 +4,10 @@ import "github.com/google/uuid"
 
 type ImageUploadPayload struct {
 	ID        uuid.UUID `json:"id,omitempty"`
-	Type      string    `json:"type"`                 // "single" atau "many"
-	FileBytes []byte    `json:"file_bytes,omitempty"` // isi file binary
-	Folder    string    `json:"folder"`               // folder di Cloudinary
-	Filename  string    `json:"filename"`             // nama file upload
+	Type      string    `json:"type"`
+	FileBytes []byte    `json:"file_bytes,omitempty"`
+	Folder    string    `json:"folder"`
+	Filename  string    `json:"filename"`
 }
 
 // Implementasi interface uploadable

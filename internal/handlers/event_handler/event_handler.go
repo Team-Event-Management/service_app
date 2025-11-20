@@ -32,13 +32,12 @@ func NewEventHandler(
 func (r *EventHandler) CreateEvent(c echo.Context) error {
 	var req eventrequest.CreateEventRequest
 
-	// ambil data text dari form
 	req.NameEvent = c.FormValue("name_event")
 	req.Description = c.FormValue("description")
 	req.Status = utils.ParseInt(c.FormValue("status"), 0)
 	req.Location = c.FormValue("location")
-
-	// ambil multiple file dari field event_images
+	req.StartDate = c.FormValue("start_date")
+	
 	form, err := c.MultipartForm()
 	if err == nil && form.File != nil {
 		req.EventImages = form.File["event_images"]
@@ -87,7 +86,7 @@ func (r *EventHandler) GetByIdEvent(c echo.Context) error {
 		if customErr, ok := errorresponse.AsCustomErr(err); ok {
 			return response.Error(c, customErr.Status, customErr.Msg, customErr.Err.Error())
 		}
-		return response.Error(c, http.StatusInternalServerError, err.Error(), "failed to get event	")
+		return response.Error(c, http.StatusInternalServerError, err.Error(), "failed to get event")
 	}
 
 	res := eventresponse.ToEventResponse(*event)
@@ -162,8 +161,7 @@ func (r *EventHandler) DeleteEventImage(c echo.Context) error {
 		return response.Error(c, http.StatusBadRequest, "bad request", err.Error())
 	}
 
-	err = r.imageService.DeleteImage(c.Request().Context(), eventId, imageID)
-	if err != nil {
+	if err := r.imageService.DeleteImage(c.Request().Context(), eventId, imageID); err != nil {
 		if customErr, ok := errorresponse.AsCustomErr(err); ok {
 			return response.Error(c, customErr.Status, customErr.Msg, customErr.Err.Error())
 		}

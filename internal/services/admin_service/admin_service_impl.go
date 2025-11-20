@@ -32,7 +32,7 @@ func (a *AdminServiceImpl) Register(ctx context.Context, req adminrequest.Regist
 	if strings.TrimSpace(req.Email) == "" {
 		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Email is required", 400)
 	}
-	
+
 	if strings.TrimSpace(req.Password) == "" {
 		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Password is required", 400)
 	}

@@ -18,6 +18,7 @@ type EventResponse struct {
 	Description  string          `json:"description"`
 	Status       int             `json:"status"`
 	Location     string          `json:"location"`
+	StartDate 	 string 		 `json:"start_date"`
 	EventImages  []ImageResponse `json:"event_images"`
 	CreatedAt    string          `json:"created_at"`
 	UpdatedAt    string          `json:"updated_at"`
@@ -38,6 +39,7 @@ func ToEventResponse(event models.Event) EventResponse {
 		Description:  event.Description,
 		Status:       event.Status,
 		Location:     event.Location,
+		StartDate: 	  utils.FormatDate(event.StartDate),
 		EventImages:  images,
 		CreatedAt:    utils.FormatDate(event.CreatedAt),
 		UpdatedAt:    utils.FormatDate(event.UpdatedAt),

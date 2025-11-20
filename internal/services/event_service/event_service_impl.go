@@ -12,6 +12,7 @@ import (
 	"io"
 	"mime/multipart"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -38,20 +39,24 @@ func (s *EventServiceImpl) CreateEvent(ctx context.Context, req eventrequest.Cre
 		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Name Event is required", 400)
 	}
 
+	t, err := time.Parse("2006-01-02", req.StartDate)
+	if err != nil {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Invalid start date format", 400)
+	}
+	
 	event := &models.Event{
 		ID:          uuid.New(),
 		NameEvent:   req.NameEvent,
 		Description: req.Description,
 		Status:      req.Status,
 		Location:    req.Location,
+		StartDate:   t,
 	}
 
-	// simpan event
 	if err := s.eventRepo.Create(ctx, event); err != nil {
 		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to create event", 500)
 	}
 
-	// kirim tiap gambar ke queue
 	for _, imgFile := range req.EventImages {
 		binner, err := fileToBytes(imgFile)
 		if err != nil || len(binner) == 0 {
@@ -59,8 +64,8 @@ func (s *EventServiceImpl) CreateEvent(ctx context.Context, req eventrequest.Cre
 		}
 
 		pay := payload.ImageUploadPayload{
-			ID:        event.ID, // cukup UUID, jangan event.ID.String()
-			Type:      "many",   // ganti dari "multiple" ke "many" agar sesuai dengan consumer
+			ID:        event.ID,
+			Type:      "many",
 			FileBytes: binner,
 			Folder:    "management_event/event_images",
 			Filename:  fmt.Sprintf("event_%s_%s", event.ID, imgFile.Filename),
@@ -93,6 +98,8 @@ func (s *EventServiceImpl) UpdateEvent(ctx context.Context, eventId uuid.UUID, r
 	event.Description = req.Description
 	event.Status = req.Status
 	event.Location = req.Location
+	t, _ := time.Parse("2006-01-02", req.StartDate)
+	event.StartDate = t
 
 	return s.eventRepo.Update(ctx, eventId, event)
 }

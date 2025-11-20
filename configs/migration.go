@@ -14,5 +14,8 @@ func RunMigrations(db *gorm.DB) error {
 		&models.Image{},
 		&models.Event{},
 		&models.ImageEvent{},
+		&models.StandCategory{},
+		&models.Stand{},
+		// &models.EventRegistration{},
 	)
 }

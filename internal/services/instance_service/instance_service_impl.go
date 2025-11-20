@@ -5,6 +5,8 @@ import (
 	instancerequest "event_management/internal/dto/request/instance_request"
 	"event_management/internal/models"
 	instancerepository "event_management/internal/repositories/instance_repositories"
+	errorresponse "event_management/pkg/constant/error_response"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -18,12 +20,17 @@ func NewInstanceServiceImpl(instanceRepo instancerepository.IInstanceRepository)
 }
 
 func (s *InstanceServiceImpl) CreateInstance(ctx context.Context, req instancerequest.CreateInstanceRequest) error {
-	instance := &models.Instance{
-		Name		: req.Name,
-		Lat 		: req.Lat,
-		Lng 		: req.Lng,
-		FullAddress : req.FullAddress,
+	if strings.TrimSpace(req.Name) == "" {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Instance Name is required", 400)
 	}
+
+	instance := &models.Instance{
+		Name:        req.Name,
+		Lat:         req.Lat,
+		Lng:         req.Lng,
+		FullAddress: req.FullAddress,
+	}
+	
 	return s.instanceRepo.Create(ctx, instance)
 }
 
@@ -50,7 +57,7 @@ func (s *InstanceServiceImpl) UpdateInstance(ctx context.Context, instanceId uui
 	if req.FullAddress != "" {
 		instance.FullAddress = req.FullAddress
 	}
-	
+
 	return s.instanceRepo.Update(ctx, instanceId, instance)
 }
 

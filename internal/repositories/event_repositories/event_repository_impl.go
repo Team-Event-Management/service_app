@@ -65,9 +65,7 @@ func (r *EventRepositoryImpl) FindById(ctx context.Context, eventId uuid.UUID) (
 }
 
 func (r *EventRepositoryImpl) Update(ctx context.Context, eventId uuid.UUID, data *models.Event) error {
-	return r.DB.WithContext(ctx).Model(&models.Event{}).
-		Where("id = ?", eventId).
-		Updates(data).Error
+	return r.DB.WithContext(ctx).Model(&models.Event{}).Where("id = ?", eventId).Updates(data).Error
 }
 
 func (r *EventRepositoryImpl) Delete(ctx context.Context, eventId uuid.UUID) error {
